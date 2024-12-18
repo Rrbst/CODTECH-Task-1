@@ -1,8 +1,13 @@
 Name: Rashmi Rekha Behera
+
 Company: CODTECH IT SOLUTIONS
+
 ID: CTO8DS490
+
 Domain: Artificial Intelligence
+
 Duration: 15th December2024 to 15th January2025
+
 Mentor: Neela Santhosh Kumar
 
 Overview of the Project 
