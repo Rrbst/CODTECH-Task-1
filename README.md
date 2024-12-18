@@ -13,6 +13,8 @@ Mentor: Neela Santhosh Kumar
 Overview of the Project 
 
 Project : GENERATIVIE ADVERSARIAL NETWORKS(GANS)
+![Screenshot 2024-12-18 162350](https://github.com/user-attachments/assets/e4ba6f41-e013-44c0-96fd-e5414c8342ee)
+
 
 Objective 
 Generative Adversarial Networks (GANs) are a class of deep learning models used to generate new data samples that mimic the distribution of a training dataset. GANs have gained significant attention for their ability to generate highly realistic images, videos, and other types of data. This project focuses on implementing and training a GAN to generate realistic images using the Fashion MNIST dataset as an example.
