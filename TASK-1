@@ -175,3 +175,141 @@ save_interval = 1000  # Save interval for generating and saving images
 
 # Call the training function
 train_gan(epochs, batch_size, save_interval)  # Training the GAN model
+
+CODE 2 : GENERATE IMAGES RESEMBLING
+
+This code defines and trains a Generative Adversarial Network (GAN) to generate images resembling a given input image, in this case, "flowers.jpg." Here's a brief explanation:
+
+Image Preprocessing:
+
+The input image is loaded and resized to 64x64 pixels.
+It is normalized to a range between 0 and 1 for better neural network training.
+Generator Model:
+
+The generator takes a random noise vector (latent space) and generates images resembling the input image using several layers like Dense, Conv2DTranspose, and BatchNormalization.
+Discriminator Model:
+
+The discriminator distinguishes between real and generated images. It uses Conv2D layers for feature extraction and a Dense layer for binary classification (real or fake).
+GAN Setup:
+
+The generator and discriminator are combined to form the GAN. The discriminator is frozen during generator training.
+The GAN is compiled with a binary cross-entropy loss function and the Adam optimizer.
+Training Loop:
+
+In each epoch, the discriminator is trained on both real and generated images. The generator is trained to fool the discriminator into classifying generated images as real.
+The losses for both the discriminator and generator are printed during training.
+Every 100 epochs, generated images are saved and displayed.
+Image Generation:
+
+After training, the generator can be used to generate new images by feeding it random noise vectors.
+This process allows the GAN to learn how to generate realistic images similar to the input image.
+
+
+
+import numpy as np
+import matplotlib.pyplot as plt
+import tensorflow as tf
+from tensorflow.keras.models import Sequential, Model
+from tensorflow.keras.layers import Dense, Reshape, Flatten, LeakyReLU, Conv2DTranspose, Conv2D, BatchNormalization
+from tensorflow.keras.optimizers import Adam
+from tensorflow.keras.preprocessing.image import load_img, img_to_array
+
+# 1. Load and preprocess the image
+def load_and_preprocess_image(image_path, img_size=(64, 64)):
+    img = load_img(image_path, target_size=img_size)
+    img_array = img_to_array(img)
+    img_array = img_array / 255.0  # Normalize to [0, 1]
+    return img_array
+
+# Load the input image
+image_path = 'flowers.jpg'
+img_size = (64, 64)  # Resize images for GAN input
+image_data = load_and_preprocess_image(image_path, img_size)
+image_data = np.expand_dims(image_data, axis=0)  # Add batch dimension
+
+print(f"Image shape: {image_data.shape}")  # Verify shape
+
+# 2. Define the Generator model
+def build_generator(latent_dim):
+    model = Sequential()
+    model.add(Dense(8 * 8 * 128, input_dim=latent_dim))
+    model.add(LeakyReLU(0.2))
+    model.add(Reshape((8, 8, 128)))
+    
+    model.add(Conv2DTranspose(128, kernel_size=4, strides=2, padding='same'))
+    model.add(LeakyReLU(0.2))
+    model.add(BatchNormalization())
+    
+    model.add(Conv2DTranspose(64, kernel_size=4, strides=2, padding='same'))
+    model.add(LeakyReLU(0.2))
+    model.add(BatchNormalization())
+    
+    model.add(Conv2DTranspose(3, kernel_size=4, strides=2, activation='tanh', padding='same'))
+    return model
+
+# 3. Define the Discriminator model
+def build_discriminator(img_shape):
+    model = Sequential()
+    model.add(Conv2D(64, kernel_size=4, strides=2, input_shape=img_shape, padding='same'))
+    model.add(LeakyReLU(0.2))
+    
+    model.add(Conv2D(128, kernel_size=4, strides=2, padding='same'))
+    model.add(LeakyReLU(0.2))
+    
+    model.add(Flatten())
+    model.add(Dense(1, activation='sigmoid'))
+    return model
+
+# 4. Compile the models
+latent_dim = 100
+img_shape = (64, 64, 3)
+
+generator = build_generator(latent_dim)
+discriminator = build_discriminator(img_shape)
+discriminator.compile(loss='binary_crossentropy', optimizer=Adam(0.0002, 0.5), metrics=['accuracy'])
+
+# Combined model
+discriminator.trainable = False
+gan_input = tf.keras.Input(shape=(latent_dim,))
+generated_img = generator(gan_input)
+gan_output = discriminator(generated_img)
+gan = Model(gan_input, gan_output)
+gan.compile(loss='binary_crossentropy', optimizer=Adam(0.0002, 0.5))
+
+# 5. Train the GAN
+def train_gan(epochs, batch_size):
+    valid = np.ones((batch_size, 1))
+    fake = np.zeros((batch_size, 1))
+    
+    for epoch in range(epochs):
+        # Train Discriminator
+        noise = np.random.normal(0, 1, (batch_size, latent_dim))
+        generated_images = generator.predict(noise)
+        
+        real_images = np.tile(image_data, (batch_size, 1, 1, 1))  # Duplicate input image
+        d_loss_real = discriminator.train_on_batch(real_images, valid)
+        d_loss_fake = discriminator.train_on_batch(generated_images, fake)
+        d_loss = 0.5 * np.add(d_loss_real, d_loss_fake)
+        
+        # Train Generator
+        g_loss = gan.train_on_batch(noise, valid)
+        
+        print(f"Epoch {epoch+1}/{epochs} [D loss: {d_loss[0]:.4f}, acc.: {100*d_loss[1]:.2f}%] [G loss: {g_loss:.4f}]")
+        
+        if epoch % 100 == 0:
+            save_images(epoch, generator)
+
+# 6. Save and visualize generated images
+def save_images(epoch, generator, examples=1):
+    noise = np.random.normal(0, 1, (examples, latent_dim))
+    generated_images = generator.predict(noise)
+    generated_images = 0.5 * generated_images + 0.5  # Rescale to [0, 1]
+    
+    for i in range(examples):
+        plt.imshow(generated_images[i])
+        plt.axis('off')
+        plt.show()
+
+# Train the GAN
+train_gan(epochs=2500, batch_size=4)
+
